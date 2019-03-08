@@ -5,7 +5,7 @@ import math
 from textblob import TextBlob as tb
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-data = 'path/to/tac_2011_aesop_test_data/''
+data = 'examples/'
 
 entity_names = ['PERSON', 'ORG', 'NORP', 'GPE', 'FACILITY', 'FAC']
 
@@ -22,6 +22,10 @@ def create_files_mapping(args, data):
     print('create_files_mapping')
     files_mapping = {}
 
+    if not os.path.exists(data):
+        print("{} can't be found".format(data))
+        exit(0)
+
     for root, dirs, files in os.walk(data):
         for file in files:
             prefix = file[:7]
@@ -31,13 +35,10 @@ def create_files_mapping(args, data):
                 files_mapping[prefix]['man'].append(file)
             else:
                 files_mapping[prefix]['machine'].append(file)
-    
-    # checking number of documents is correct
-    for k, v in files_mapping.items():
-        if len(v['man']) != 4:
-            print(len(v['man']))
-        if len(v['machine']) != 51:
-            print(len(v['machine']))
+
+    output_directory = get_file_name(args, 'output_directory')
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
     write_pickle(get_file_name(args, 'files_mapping'), files_mapping)
 
     return files_mapping
@@ -168,6 +169,8 @@ def create_questions(args, files_mapping):
 
 def create_summaries_with_keywords(args, files_mapping):
     summaries_with_keywords_folder = get_file_name(args, 'summaries_with_keywords')
+    if not os.path.exists(summaries_with_keywords_folder):
+        os.makedirs(summaries_with_keywords_folder)
     print('create_summaries_with_keywords')
 
     nlp = spacy.load('en')
@@ -246,8 +249,8 @@ def clean_text(text):
     return text
 
 def eval_acc(args, data):
-    query_path = './queries'+str(args.qa_id)+'.pkl'
-    rewards_path = './rewards'+str(args.qa_id)+'.txt'
+    query_path = './queries.pkl'
+    rewards_path = './rewards.txt'
 
     write_pickle(query_path, data)
     while(not os.path.isfile(rewards_path)):
@@ -287,20 +290,22 @@ def answer_questions(args, files_mapping):
 
 
 def get_file_name(args, name):
+    if name == 'output_directory':
+        return'./outputs/'
     if name == 'files_mapping':
-        return'./files_mapping_file.pkl'
+        return'./outputs/files_mapping_file.pkl'
     if name == 'entities':
-        return'./entities_data.pkl'
+        return'./outputs/entities_data.pkl'
     if name == 'top_tfidf_words':
-        return'./top_tfidf_words_file.pkl'
+        return'./outputs/top_tfidf_words_file.pkl'
     if name == 'verbs_and_nouns':
-        return'./verbs_and_nouns_file.pkl'
+        return'./outputs/verbs_and_nouns_file.pkl'
     if name == 'keywords':
-        return'./keywords_file.pkl'
+        return'./outputs/keywords_file.pkl'
     if name == 'questions':
-        return'./questions_data.pkl'
+        return'./outputs/questions_data.pkl'
     if name == 'summaries_with_keywords':
-        return './summaries_with_keywords'
+        return './outputs/summaries_with_keywords'
 
 def get_global(name):
     if name == 'use_verbs_and_nouns':
@@ -312,7 +317,6 @@ def get_global(name):
 def main():
     parser = argparse.ArgumentParser(description='justifying APES on TAC2011')
     parser.add_argument('--mode', required=True, type=str, choices=['preprocess', 'answer_questions'])
-    parser.add_argument('--qa_id', type=int)
 
     args = parser.parse_args()
 
